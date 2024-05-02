@@ -14,13 +14,14 @@ import "react-photo-view/dist/react-photo-view.css";
 import { getFileName } from "./service";
 import { fsImage } from "./firestore";
 import useSWR from "swr";
-import { Button} from 'antd';
-import {  LoadingOutlined, UploadOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
+import { LoadingOutlined, UploadOutlined } from '@ant-design/icons';
+
 function App() {
 
   const [imageUpload, setImageUpload] = useState<any>([]);
   const [isLoading, setIsLoading] = useState<any>(false);
-
+  const [originalUrl, setOriginalUrl] = useState()
   const imagesListRef = ref(storage, "images/");
   const fileInputRef = useRef<any>(null);
 
@@ -84,20 +85,21 @@ function App() {
   };
 
   const handleChooseImage = (e: any) => {
-    setImageUpload((prev:any) => [Array.from(e.target.files)]);
+    setImageUpload((prev: any) => [Array.from(e.target.files)]);
   };
 
-  const handleRemoveImage = (item:any) => {
-    const itemFilter = imageUpload[0]?.filter((_:any) =>{
-      return  _ != item
+  const handleRemoveImage = (item: any) => {
+    const itemFilter = imageUpload[0]?.filter((_: any) => {
+      return _ != item
     })
     setImageUpload([itemFilter])
   }
 
   const { data, mutate } = useSWR("IMAGE_FETCHER", fsImage.getAll);
 
-  console.log('sss',data);
-  
+
+
+
 
   return (
     <div className="App">
@@ -113,37 +115,38 @@ function App() {
             multiple
             hidden={true}
           />
-    
-          {imageUpload[0]?.length>0 ? (
-            <Button type="primary" size={'large'}  icon={isLoading ? <LoadingOutlined /> : <UploadOutlined />} onClick={handleUploadImage}>
+
+          {imageUpload[0]?.length > 0 ? (
+            <Button type="primary" size={'large'} icon={isLoading ? <LoadingOutlined /> : <UploadOutlined />} onClick={handleUploadImage}>
               Upload
             </Button>
           ) : (
-            <Button type="primary" size={'large'}  icon={<UploadOutlined />} onClick={onChooseFile}>
-            Choose Image
-          </Button>
+            <Button type="primary" size={'large'} icon={<UploadOutlined />} onClick={onChooseFile}>
+              Choose Image
+            </Button>
           )}
           <div className="img-seen-wrapper">
-            {imageUpload[0]?.map((item:any,index:any) => {
-              
-               const imageUrl = URL.createObjectURL(item);
+            {imageUpload[0]?.map((item: any, index: any) => {
+
+              const imageUrl = URL.createObjectURL(item);
               return (
                 (
                   <div className="img-seen-container">
-                     <div 
-                        key={index}
-                        className="remove-icon"
-                        onClick={() => handleRemoveImage(item)}>
-                         x
-                         </div>
-              
-                    <img src={imageUrl} className="img-seen" key={index}/>
+                    <div
+                      key={index}
+                      className="remove-icon"
+                      onClick={() => handleRemoveImage(item)}>
+                      x
+                    </div>
+
+                    <img src={imageUrl} className="img-seen" key={index} />
                   </div>
-                 )
+                )
               )
             })}
           </div>
         </div>
+
 
         <div className="image-wrap">
           <PhotoProvider>
@@ -162,10 +165,25 @@ function App() {
                       />
                     </PhotoView>
                   ))}
+
+
               </Masonry>
             </ResponsiveMasonry>
           </PhotoProvider>
         </div>
+      </div>
+
+      <div>
+        {data &&
+          data?.map((item: any) => (
+            <img
+              src={item.originalUrl}
+              alt=""
+              className="main-img"
+              style={{ objectFit: "cover", display: 'none' }}
+            />
+
+          ))}
       </div>
     </div>
   );
