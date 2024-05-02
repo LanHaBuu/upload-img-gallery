@@ -25,6 +25,7 @@ function App() {
   const fileInputRef = useRef<any>(null);
 
   const onChooseFile = () => {
+    fileInputRef.current.value = null;
     fileInputRef.current.click();
   };
 
