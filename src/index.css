@@ -1,12 +1,12 @@
 * {
   margin: 0;
   padding: 0;
-
+  box-sizing: border-box;
 }
 
 html {
   background: linear-gradient(to right, rgb(0, 4, 40), rgb(0, 78, 146));
-
+  box-sizing: border-box;
 }
 
 .App {
