@@ -32,8 +32,8 @@ function App() {
   const handleUploadImage = async () => {
     if (!imageUpload) return;
 
-    const originalQuality = 100;
-    const thumbQuality = 30;
+    const originalQuality = 10;
+    const thumbQuality = 5;
 
     imageUpload[0]?.forEach(async (file: any) => {
       const options = {
@@ -95,6 +95,9 @@ function App() {
   }
 
   const { data, mutate } = useSWR("IMAGE_FETCHER", fsImage.getAll);
+
+  console.log('sss',data);
+  
 
   return (
     <div className="App">
