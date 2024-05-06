@@ -1,29 +1,54 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  listAll,
-  getMetadata,
-} from "firebase/storage";
-import { storage } from "./firebase";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
-import webpfy from "webpfy";
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import "react-photo-view/dist/react-photo-view.css";
-import { getFileName } from "./service";
-import { fsImage } from "./firestore";
-import useSWR from "swr";
+
 import { Button } from 'antd';
 import { LoadingOutlined, UploadOutlined } from '@ant-design/icons';
+import { getAllImages, uploadImage } from "./api";
+
+
 
 function App() {
-
+  const [data, setData] = useState<any>([]);
+  const [test, setTest] = useState<boolean>(false)
   const [imageUpload, setImageUpload] = useState<any>([]);
   const [isLoading, setIsLoading] = useState<any>(false);
-  const [originalUrl, setOriginalUrl] = useState()
-  const imagesListRef = ref(storage, "images/");
+  const [windowWidth, setWindowWidth] = useState(0);
+
+  const numberColumnResponsive = (value: any) => {
+    let keys = Object.keys(objectResponse).map(Number);
+    keys.sort((a, b) => a - b);
+
+    if (value < keys[0]) {
+      return objectResponse[keys[0]];
+    }
+    if (value > keys[keys.length - 1]) {
+      return objectResponse[keys[keys.length - 1]];
+    }
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (value >= keys[i] && value < keys[i + 1]) {
+        return objectResponse[keys[i]];
+      }
+    }
+
+    // If value is greater than the last key, return the value corresponding to the last key
+    return objectResponse[keys[keys.length - 1]];
+  }
+
+  const GUTTER_MANSORY = 25
+  const objectResponse: any = { 350: 1, 750: 2, 900: 3, 1280: 4 }
+  const widthGutter = GUTTER_MANSORY * (numberColumnResponsive(windowWidth + 40) - 1)
+  const widthThumbFirstRender = Math.floor((windowWidth - widthGutter) / numberColumnResponsive(windowWidth + 40))
+
+  console.log('windowWidth', windowWidth);
+  console.log('widthGutter', widthGutter);
+  console.log('numberColumnResponsive', numberColumnResponsive(windowWidth));
+  console.log('widthThumbFirstRender', widthThumbFirstRender);
+
+
   const fileInputRef = useRef<any>(null);
+
 
   const onChooseFile = () => {
     fileInputRef.current.value = null;
@@ -32,57 +57,26 @@ function App() {
 
   const handleUploadImage = async () => {
     if (!imageUpload) return;
+    setIsLoading(true);
 
-    const originalQuality = 10;
-    const thumbQuality = 5;
-
-    imageUpload[0]?.forEach(async (file: any) => {
-      const options = {
-        image: file,
-        quality: originalQuality,
-      };
-
-      const thumbOptions = {
-        image: file,
-        quality: thumbQuality,
-      };
-
-      try {
-        setIsLoading(true)
-        const webp = await webpfy(options);
-        const thumbWebp = await webpfy(thumbOptions);
-
-        const convertedFileName = getFileName(file, webp);
-        const convertedThumbFileName = getFileName(file, thumbWebp);
-
-        const imageRef = ref(storage, `images/${convertedFileName}`);
-        const imageThumbRef = ref(
-          storage,
-          `thumb-images/${convertedThumbFileName}`
-        );
-
-        const thumbSnapshot = await uploadBytes(
-          imageThumbRef,
-          thumbWebp.webpBlob
-        );
-        const thumbUrl = await getDownloadURL(thumbSnapshot.ref);
-
-        const snapshot = await uploadBytes(imageRef, webp.webpBlob);
-        const url = await getDownloadURL(snapshot.ref);
-
-        await fsImage.create({
-          originalUrl: url,
-          thumbUrl,
-        });
-        mutate();
-        setImageUpload([])
-        setIsLoading(false)
-      } catch (error) {
-        setIsLoading(false)
-        console.error("Error uploading image:", error);
-      }
+    // Map each file to a promise of upload operation
+    const uploadPromises = imageUpload[0]?.map(async (file: any) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      await uploadImage(formData);
     });
+
+    // Wait for all upload operations to complete
+    await Promise.all(uploadPromises);
+
+    // Once all uploads are complete
+    setTest((prev: any) => !prev);
+    setImageUpload([]);
+    setIsLoading(false);
+
   };
+
+
 
   const handleChooseImage = (e: any) => {
     setImageUpload((prev: any) => [Array.from(e.target.files)]);
@@ -95,8 +89,50 @@ function App() {
     setImageUpload([itemFilter])
   }
 
-  const { data, mutate } = useSWR("IMAGE_FETCHER", fsImage.getAll);
+  const [mainImgWidth, setMainImgWidth] = useState(0);
 
+  useLayoutEffect(() => {
+    const updateWindowDimensions = () => {
+      const mainImgElement: any = document.getElementsByClassName('wrapper')[0];
+      if (mainImgElement) {
+        const width = mainImgElement.offsetWidth;
+        setWindowWidth(Math.floor(width));
+      }
+    };
+
+
+    // Call the function initially
+    updateWindowDimensions();
+
+    const handleResize = () => {
+      const mainImgElement: any = document.getElementsByClassName('main-img')[0];
+      if (mainImgElement) {
+        const width = mainImgElement.offsetWidth;
+        setMainImgWidth(Math.floor(width));
+      }
+    };
+
+    // Call the handleResize function initially
+    handleResize();
+
+    // Add event listener for window resize
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', updateWindowDimensions);
+
+    // Remove event listener when component unmounts
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('resize', updateWindowDimensions);
+    };
+  }, []); // Empty dependency array to run effect only once
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const res = await getAllImages()
+      setData(res.data)
+    }
+    fetchData()
+  }, [test])
 
 
 
@@ -127,13 +163,11 @@ function App() {
           )}
           <div className="img-seen-wrapper">
             {imageUpload[0]?.map((item: any, index: any) => {
-
               const imageUrl = URL.createObjectURL(item);
               return (
                 (
                   <div className="img-seen-container">
                     <div
-                      key={index}
                       className="remove-icon"
                       onClick={() => handleRemoveImage(item)}>
                       x
@@ -151,29 +185,59 @@ function App() {
         <div className="image-wrap">
           <PhotoProvider>
             <ResponsiveMasonry
-              columnsCountBreakPoints={{ 350: 1, 750: 2, 900: 3, 1280: 4 }}
+              columnsCountBreakPoints={objectResponse}
             >
-              <Masonry columnsCount={4} gutter="25px">
+              <Masonry columnsCount={4} gutter={`${GUTTER_MANSORY}px`}>
                 {data &&
-                  data?.map((item: any) => (
-                    <PhotoView src={item.originalUrl} key={item.id}>
-                      <img
-                        src={item.thumbUrl}
-                        alt=""
-                        className="main-img"
-                        style={{ objectFit: "cover" }}
-                      />
+                  data?.map((item: any, index: any) => (
+                    <PhotoView src={item.originalURL} key={item.id}>
+                      <>
+                        <span
+                          style={{
+                            width: mainImgWidth || widthThumbFirstRender,
+                            height: Math.floor(item.aspecratio * (mainImgWidth || widthThumbFirstRender)),
+                            border: '1px solid red',
+                            borderRadius: '8px',
+
+
+                          }}
+                          className={`${mainImgWidth || widthThumbFirstRender} - ${Math.floor((item.aspecratio * mainImgWidth || widthThumbFirstRender))}`}
+                        >
+                        </span>
+
+
+                        <img
+                          src={item.thumbURL}
+                          className="main-img"
+                          style={{
+                            objectFit: 'cover',
+
+                          }}
+                          key={index}
+                          alt={`${mainImgWidth || widthThumbFirstRender} - ${Math.floor((item.aspecratio * mainImgWidth || widthThumbFirstRender))}`}
+                        />
+
+                      </>
+
                     </PhotoView>
                   ))}
-
-
               </Masonry>
             </ResponsiveMasonry>
           </PhotoProvider>
+
+
         </div>
+
+
+
+
+
+
+
+
       </div>
 
-      <div>
+      {/* <div>
         {data &&
           data?.map((item: any) => (
             <img
@@ -184,7 +248,7 @@ function App() {
             />
 
           ))}
-      </div>
+      </div> */}
     </div>
   );
 }

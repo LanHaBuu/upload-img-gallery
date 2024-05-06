@@ -18,7 +18,7 @@ html {
 
 .wrapper {
   width: 100%;
-  max-width: 1300px;
+  /* max-width: 1300px; */
 }
 
 
@@ -26,7 +26,7 @@ html {
   object-fit: cover;
   border-radius: 8px;
   cursor: pointer;
-  
+  background-color: 1px solid black;
 }
 
 .main-img:hover {
@@ -212,3 +212,21 @@ h2 {
   right: 5px;
   cursor: pointer;
 }
+
+.lg-react-element {
+  column-count: 3;
+  column-gap: 10px;
+}
+
+/* img {
+  max-width: 100%;
+  display: block;
+  padding: 5px 0px;
+  border-radius: 20px;
+  transition: transform 0.2s;
+}
+
+img:hover {
+  filter: opacity(.9);
+  transform: scale(1.01);
+} */
