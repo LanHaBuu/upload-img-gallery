@@ -3,15 +3,13 @@ import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import "react-photo-view/dist/react-photo-view.css";
 
-import { Button } from 'antd';
-import { LoadingOutlined, UploadOutlined } from '@ant-design/icons';
+import { Button } from "antd";
+import { LoadingOutlined, UploadOutlined } from "@ant-design/icons";
 import { getAllImages, uploadImage } from "./api";
-
-
 
 function App() {
   const [data, setData] = useState<any>([]);
-  const [test, setTest] = useState<boolean>(false)
+  const [test, setTest] = useState<boolean>(false);
   const [imageUpload, setImageUpload] = useState<any>([]);
   const [isLoading, setIsLoading] = useState<any>(false);
   const [windowWidth, setWindowWidth] = useState(0);
@@ -27,28 +25,27 @@ function App() {
       return objectResponse[keys[keys.length - 1]];
     }
     for (let i = 0; i < keys.length - 1; i++) {
-      if (value >= keys[i] && value < keys[i + 1]) {
+      if (value >= keys[i] && value <= keys[i + 1]) {
         return objectResponse[keys[i]];
       }
     }
 
     // If value is greater than the last key, return the value corresponding to the last key
     return objectResponse[keys[keys.length - 1]];
-  }
+  };
 
-  const GUTTER_MANSORY = 25
-  const objectResponse: any = { 350: 1, 750: 2, 900: 3, 1280: 4 }
-  const widthGutter = GUTTER_MANSORY * (numberColumnResponsive(windowWidth + 40) - 1)
-  const widthThumbFirstRender = Math.floor((windowWidth - widthGutter) / numberColumnResponsive(windowWidth + 40))
-
-  console.log('windowWidth', windowWidth);
-  console.log('widthGutter', widthGutter);
-  console.log('numberColumnResponsive', numberColumnResponsive(windowWidth));
-  console.log('widthThumbFirstRender', widthThumbFirstRender);
-
+  const GUTTER_MANSORY = 25;
+  const PADDING_TAG_WRAPPER = 40;
+  const objectResponse: any = { 350: 1, 750: 2, 900: 3, 1280: 4 };
+  const widthGutter =
+    GUTTER_MANSORY *
+    (numberColumnResponsive(windowWidth + PADDING_TAG_WRAPPER) - 1);
+  const widthThumbFirstRender = Math.floor(
+    (windowWidth - widthGutter) /
+      numberColumnResponsive(windowWidth + PADDING_TAG_WRAPPER)
+  );
 
   const fileInputRef = useRef<any>(null);
-
 
   const onChooseFile = () => {
     fileInputRef.current.value = null;
@@ -73,69 +70,47 @@ function App() {
     setTest((prev: any) => !prev);
     setImageUpload([]);
     setIsLoading(false);
-
   };
 
-
-
   const handleChooseImage = (e: any) => {
-    setImageUpload((prev: any) => [Array.from(e.target.files)]);
+    setImageUpload(() => [Array.from(e.target.files)]);
   };
 
   const handleRemoveImage = (item: any) => {
     const itemFilter = imageUpload[0]?.filter((_: any) => {
-      return _ != item
-    })
-    setImageUpload([itemFilter])
-  }
-
-  const [mainImgWidth, setMainImgWidth] = useState(0);
+      return _ != item;
+    });
+    setImageUpload([itemFilter]);
+  };
 
   useLayoutEffect(() => {
     const updateWindowDimensions = () => {
-      const mainImgElement: any = document.getElementsByClassName('wrapper')[0];
+      const mainImgElement: any = document.getElementsByClassName("wrapper")[0];
       if (mainImgElement) {
         const width = mainImgElement.offsetWidth;
         setWindowWidth(Math.floor(width));
       }
     };
 
-
     // Call the function initially
     updateWindowDimensions();
 
-    const handleResize = () => {
-      const mainImgElement: any = document.getElementsByClassName('main-img')[0];
-      if (mainImgElement) {
-        const width = mainImgElement.offsetWidth;
-        setMainImgWidth(Math.floor(width));
-      }
-    };
-
-    // Call the handleResize function initially
-    handleResize();
-
     // Add event listener for window resize
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('resize', updateWindowDimensions);
+    window.addEventListener("resize", updateWindowDimensions);
 
     // Remove event listener when component unmounts
     return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('resize', updateWindowDimensions);
+      window.removeEventListener("resize", updateWindowDimensions);
     };
   }, []); // Empty dependency array to run effect only once
 
   useEffect(() => {
     const fetchData = async () => {
-      const res = await getAllImages()
-      setData(res.data)
-    }
-    fetchData()
-  }, [test])
-
-
-
+      const res = await getAllImages();
+      setData(res.data);
+    };
+    fetchData();
+  }, [test]);
 
   return (
     <div className="App">
@@ -153,11 +128,21 @@ function App() {
           />
 
           {imageUpload[0]?.length > 0 ? (
-            <Button type="primary" size={'large'} icon={isLoading ? <LoadingOutlined /> : <UploadOutlined />} onClick={handleUploadImage}>
+            <Button
+              type="primary"
+              size={"large"}
+              icon={isLoading ? <LoadingOutlined /> : <UploadOutlined />}
+              onClick={handleUploadImage}
+            >
               Upload
             </Button>
           ) : (
-            <Button type="primary" size={'large'} icon={<UploadOutlined />} onClick={onChooseFile}>
+            <Button
+              type="primary"
+              size={"large"}
+              icon={<UploadOutlined />}
+              onClick={onChooseFile}
+            >
               Choose Image
             </Button>
           )}
@@ -165,90 +150,58 @@ function App() {
             {imageUpload[0]?.map((item: any, index: any) => {
               const imageUrl = URL.createObjectURL(item);
               return (
-                (
-                  <div className="img-seen-container">
-                    <div
-                      className="remove-icon"
-                      onClick={() => handleRemoveImage(item)}>
-                      x
-                    </div>
-
-                    <img src={imageUrl} className="img-seen" key={index} />
+                <div className="img-seen-container">
+                  <div
+                    className="remove-icon"
+                    onClick={() => handleRemoveImage(item)}
+                  >
+                    x
                   </div>
-                )
-              )
+
+                  <img src={imageUrl} className="img-seen" key={index} />
+                </div>
+              );
             })}
           </div>
         </div>
 
-
         <div className="image-wrap">
           <PhotoProvider>
-            <ResponsiveMasonry
-              columnsCountBreakPoints={objectResponse}
-            >
+            <ResponsiveMasonry columnsCountBreakPoints={objectResponse}>
               <Masonry columnsCount={4} gutter={`${GUTTER_MANSORY}px`}>
                 {data &&
                   data?.map((item: any, index: any) => (
                     <PhotoView src={item.originalURL} key={item.id}>
-                      <>
-                        <span
-                          style={{
-                            width: mainImgWidth || widthThumbFirstRender,
-                            height: Math.floor(item.aspecratio * (mainImgWidth || widthThumbFirstRender)),
-                            border: '1px solid red',
-                            borderRadius: '8px',
-
-
-                          }}
-                          className={`${mainImgWidth || widthThumbFirstRender} - ${Math.floor((item.aspecratio * mainImgWidth || widthThumbFirstRender))}`}
-                        >
-                        </span>
-
-
+                      <span
+                        style={{
+                          width: "100%",
+                          height: Math.floor(
+                            item?.aspecratio * widthThumbFirstRender
+                          ),
+                          border: "1px solid red",
+                          borderRadius: "8px",
+                          position: "relative",
+                        }}
+                      >
                         <img
                           src={item.thumbURL}
                           className="main-img"
                           style={{
-                            objectFit: 'cover',
-
+                            objectFit: "cover",
+                            position: "absolute",
+                            width: "100%",
+                            height: "100%",
                           }}
                           key={index}
-                          alt={`${mainImgWidth || widthThumbFirstRender} - ${Math.floor((item.aspecratio * mainImgWidth || widthThumbFirstRender))}`}
                         />
-
-                      </>
-
+                      </span>
                     </PhotoView>
                   ))}
               </Masonry>
             </ResponsiveMasonry>
           </PhotoProvider>
-
-
         </div>
-
-
-
-
-
-
-
-
       </div>
-
-      {/* <div>
-        {data &&
-          data?.map((item: any) => (
-            <img
-              src={item.originalUrl}
-              alt=""
-              className="main-img"
-              style={{ objectFit: "cover", display: 'none' }}
-            />
-
-          ))}
-      </div> */}
     </div>
   );
 }
